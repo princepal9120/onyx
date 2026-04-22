@@ -84,6 +84,9 @@ jobs:
       - ${{ format('run-id={0}-external-dependency-unit-tests-job-{1}', github.run_id, strategy['job-index']) }}
       - extras=s3-cache
     timeout-minutes: 45
+    permissions:
+      id-token: write # Required for OIDC-based AWS credential exchange
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -150,6 +153,12 @@ jobs:
           # Run migrations to head
           alembic upgrade head
           alembic heads --verbose
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # ratchet:aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: us-east-2
 
       - name: Run Tests for ${{ matrix.test-dir }}
         shell: script -q -e -c "bash --noprofile --norc -eo pipefail {0}"
